@@ -1,0 +1,44 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, mexico]{babel}
+\usepackage{csquotes}
+\usepackage[left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm]{geometry}
+% Margenes y tamaño de hoja
+%\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\input{docUI/paquetes}
+
+\newcommand{\Universidad}{Universidad Nacional Autónoma de México}
+\newcommand{\UNIV}{UNAM}
+\newcommand{\Facultad}{Facultad de Ciencias}
+\newcommand{\materia}{Algoritmos Paralelos}
+\newcommand{\NomAlumA}{Autor: Medina Peralta Joaquín}
+\newcommand{\tit}{Proyecto final: Implementación de Run-length enconding (RLE)}
+
+\input{docUI/Extras}
+
+\pagestyle{fancy}
+\lstset{style=mystyle}
+\sloppy 
+%--------
+\newtheorem{hint}{Pista}
+
+%--------
+\begin{document}
+
+\thispagestyle{empty} % Diseño de encabezados y pies de página
+\setlength{\parindent}{0cm} % Indentation 0
+\setlength{\headheight}{22.5pt}
+\setlength{\columnsep}{40pt} % separación de columnas
+
+%------------------------------------------------------------
+\input{docUI/MiniPortada}
+%------------------------------------------------------------
+% Inicio del documento
+\input{sections/section1}
+\printbibliography
+\newpage
+\section*{Anexo}
+\input{sections/anexo.tex}
+
+%\input{sections/section2}
+\end{document}
