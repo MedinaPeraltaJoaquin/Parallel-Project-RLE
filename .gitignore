@@ -39,3 +39,66 @@
 
 # debug information files
 *.dwo
+
+# ======================================
+# Archivos de entorno y configuración
+# ======================================
+.env                     # Variables de entorno (DB, API keys)
+.env.*                   # Variantes (.env.local, .env.test, etc.)
+
+# ======================================
+# IDE / Editor
+# ======================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ / CLion / RustRover
+.idea/
+
+# Otros editores
+*.swp
+*.swo
+*~
+
+# ======================================
+# Logs
+# ======================================
+*.log
+
+# ======================================
+# Sistema operativo
+# ======================================
+.DS_Store                
+Thumbs.db    
+
+# Archivos generados por LaTeX/pdfLaTeX/XeLaTeX
+/docs/*.aux
+/docs/*.log
+/docs/*.lof
+/docs/*.lot
+/docs/*.toc
+/docs/*.fls
+/docs/*.fdb_latexmk
+/docs/*.synctex.gz
+/docs/*.out
+/docs/*.nav
+/docs/*.snm
+/docs/*.vrb
+/docs/*.dvi
+/docs/*.ps
+/docs/*.idx
+/docs/*.ilg
+/docs/*.ind
+/docs/*.nlo
+/docs/*.nls
+/docs/*.bbl
+/docs/*.bcf
+/docs/*.blg
+/docs/*.run.xml
+
+# Directorios de compilación y archivos de TikZ/externalize
+/docs/*.temp.pdf
+/docs/_minted*
+/docs/*-figures/
+/docs/tikz-external/
