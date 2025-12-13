@@ -1,13 +1,159 @@
-\section*{Introducción}
-
-
 \section*{Problema}
 
-\section*{Implementación}
+Run-Length encoding es una forma de compresión de datos sin pérdida, 
+donde la secuencia de símbolos de la entrada se almacenan 
+como una simple ocurrencia con el número simbolos consecutivos.
 
-\subsection*{Estrategia de paralelización}
+Definimos, para una cadena $w \in \Sigma^{*}$, una serie de 
+pares $(r,l,s)$ de datos consecutivos dadas por:
+\begin{itemize}
+    \item El carácter de control $r \notin  \Sigma$.
+    \item La longitud de la secuencia $l \in \mathbb{N} $
+    \item El símbolo del alfabeto $s \in \Sigma$
+\end{itemize}
+
+Por ejemplo, tenemos una cadena perteneciente al alfabeto en inglés, 
+\texttt{ABABBBC} y la lista de tuplas con el caracter de 
+control $\alpha$, se tiene:
+\begin{align*}
+    (\alpha,1,\texttt{A}), (\alpha,1,\texttt{B}), (\alpha,1,\texttt{A}) \\
+    (\alpha,3,\texttt{B}), (\alpha,1,\texttt{C})
+\end{align*} 
+
+Para poder representarlo en un archivo, los símbolos con un solo elemento
+consecutivo, es decir que no se repiten, se representarán como \texttt{s}. Con el
+ejemplo anterior, la cadena comprimida sería \texttt{ABA($\alpha,3$,B)C}.
+
+Por lo tanto, el algoritmo es eficiente para cadenas o contenido donde
+hay muchas secuencias consecutivas, es decir, archivos de texto, binarios
+representación de una imagen por medio de pixeles o componentes de bloques
+largos de archivos de sonido. (\cite{pu2005fundamental}).
+
+Para este trabajo, se consideran únicamente archivos de texto para comprimir
+que estén en \texttt{utf-8}, debido a que, se usará una combinación para
+representar las tuplas. Para los símbolos sin repetición o secuencia muy cortas,
+, como se menciona en (\cite{pu2005fundamental}), se implementará 
+un modo literal donde los bytes se escriben directamente sin tupla. 
+Esto evita la expansión del archivo, permitiendo que la compresión se reserve
+únicamente para las secuencias que si generen un ahorro significativo.
+
+\subsection*{Algoritmo secuencial}
+
+Como se menciona en (\cite{pu2005fundamental}), se define caracteres de
+control de repetición $r_3,r_4, \ldots$, los cuales para $r_i$
+representa la cantidad $i$ de símbolos consecutivos. De esta manera,
+se usará el caracter de control únicamente cuando la longitud sea 
+mayor a $3$.
+
+Asi, definimos el algoritmo de encriptación como:
+\begin{itemize}
+    \item Repetir hasta llegar al final del archivo:
+    \item[]{
+        \begin{itemize}
+            \item Leer el símbolo $S$ de la secuencia:
+            \item[]{
+                \begin{itemize}
+                    \item{
+                        Contar el número de símbolos consecutivos
+                        iguales $i$ hasta encontrar uno diferente.
+                    }
+                    \item{
+                        Guardar en el archivo de salida el par
+                        $r_iS$ solo si $i > 2$, en oto caso guardar
+                        el símbolo $i$
+                    }
+                \end{itemize}
+            }
+        \end{itemize}
+    }
+\end{itemize}
+
+Para la implementación, se debe de considerar tres apuntadores $i,j$
+donde $j = i + 1$  donde los usaremos para recorrer el arreglo de símbolos
+$S$, para lo cual, mientras que $S[i] == S[j]$ entonces podemos incrementar
+el contador, de esta manera verificamos si es mayor al umbral, de esta
+manera podemos representarlo en forma de tupla y en otro caso, se escribe
+el caracter $S[q]$ y $S[p]$ en la cadena comprimida. (El pseudocódigo
+se encuentra en el anexo \ref{anexo:codigo.1})
+
+De esta manera, definimos el algoritmo de desencriptación como:
+\begin{itemize}
+    \item Repetir hasta llegar al final del archivo:
+    \item[]{
+        \begin{itemize}
+            \item Leer el símbolo $S$ de la secuencia:
+            \item[]{
+                \begin{itemize}
+                    \item{
+                        Si el símbolo $S = r_i$, se debe de leer el
+                        símbolo consecutivo y escribir $i$ veces en
+                        la salida.
+                    }
+                    \item{
+                        En otro caso, escribir el símbolo actual.
+                    }
+                \end{itemize}
+            }
+        \end{itemize}
+    }
+\end{itemize}
+
+De la misma manera, es necesario un apuntador $p$ para recorrer el archivo
+comprimido, donde si $S[p]$ es el caracter de control definido $r$, se toma
+el valor de $S[p+1] = n$ como un número y $S[p+2]$ como el símbolo a repetir
+$n$ veces, en otro caso se guarda $S[p]$ en la salida. (El pseudocódigo
+se encuentra en el anexo \ref{anexo:codigo.2})
+
+A su vez, se considera el uso de \texttt{FLAG\_RLE} para iniciar la tupla
+definida en la sección anterior y en dado caso que el símbolo $s$ sea igual
+a \texttt{FLAG\_RLE}, se considera a \texttt{FLAG\_LITERAL} para escapar
+y escribir el valor de \texttt{FLAG\_RLE}.
+
+\subsection*{Algoritmo en paralelo}
+
+Para esto, se toma en inspiración del artículo (\cite{manchev2006parallel}),
+donde se propone el dividir la secuencia de entrada en bloques procesados
+en paralelo donde cada proceso identifica las corridas locales dentro 
+de su bloque, para posteriormente realizar una fase de combinación donde se
+revisa si los límites entre bloques contiguos se cruzan con corridas
+de símbolos, asegurando que las secuencias iguales se representen correctamente.
+
+De esta manera, se debe de utilizar el uso de memoria compartidad y distribuida
+para poder ejecutar el algoritmo y por lo tanto, nos esta danto la pista de usar
+\texttt{MPI}.
+
+Antes de pasar a la implementación, debemos mencionar que esta estrategía de
+paralelizar el algoritmo secuencial \texttt{RLE} sigue el principio de 
+\texttt{Fork Join} donde se divide el trabajo entre los distintos procesadores
+y al final, juntar los resultados de cada procesador en uno global.
+
+Se puede observar la técnica de \texttt{Fork Join} de manera explicita 
+al dividir la secuencia de entrada en bloques para que cada procesador 
+realice \texttt{RLE} de manera local y al final se junta cada bloque 
+revisando si no hay cruzes entre cada uno.
+
+De esta manera, proponemos el pseudocódigo (\ref{anexo:codigo.3}) donde se puede
+observar la compresión en \texttt{RLE} en paralelo y en  (\ref{anexo:codigo.4})
+la manera de descomprimir en paralelo.
 
 \section*{Experimentación}
+
+Para esto, trabajaremos con 3 archivos de 100 MB con una alta, media y baja 
+repetitividad los cuales se calculara el tiempo de comprimir de manera secuencial
+y paralela con ${2,4,6,20,50}$ procesadores.
+
+De este modo, se realizará la prueba en el siguiente equipo:
+\begin{lstlisting}[style=BashStyle]
+---------------------
+Sistema operativo: Darwin MacBook-Pro-****.local 22.6.0 Darwin 
+Kernel Version 22.6.0: Tue Jul 15 08:22:28 PDT 2025; root:xnu-8796.141.3.713.2~2/
+RELEASE_X86_64 x86_64
+CPU: Intel(R) Core(TM) i5-7360U CPU @ 2.30GHz
+Nucleos fisicos: 2
+Nucleos logicos: 4
+Memoria RAM total: 8,00 GB 
+-------------------------------------------
+\end{lstlisting}
 
 \section*{Resultados}
 
