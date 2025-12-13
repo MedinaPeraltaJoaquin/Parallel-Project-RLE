@@ -1,7 +1,3 @@
-# ==============================================================================
-# CONFIGURACIÓN GENERAL PARA COMPATIBILIDAD LINUX / MACOS
-# ==============================================================================
-
 CXX = mpicxx
 RM = rm -f
 
@@ -12,7 +8,7 @@ BUILD_DIR = build
 TEST_DIR = tests
 
 # Banderas de compilación
-CXXFLAGS = -O3 -Wall -std=c++17 -I$(INC_DIR)
+CXXFLAGS = -O3 -Wall -std=c++17 -I$(INC_DIR) -g
 
 # Nombres de archivos
 TARGET = rle_parallel
@@ -22,10 +18,6 @@ TEST_TARGET = $(BUILD_DIR)/rle_tests
 # Archivos fuente y objeto
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
-
-# ==============================================================================
-# REGLAS PRINCIPALES
-# ==============================================================================
 
 .PHONY: all setup clean run test generate_data
 
@@ -44,10 +36,6 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compilando $<..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# ==============================================================================
-# REGLAS DE PRUEBAS Y GENERACIÓN DE DATOS
-# ==============================================================================
-
 # Compilación del ejecutable de pruebas
 $(TEST_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/RLE_tests.o
 	@echo "Enlazando unit tests..."
@@ -65,11 +53,9 @@ test: setup $(TEST_TARGET)
 # Regla para generar datos de prueba
 generate_data: setup
 	@echo "Generando datos de prueba (100MB por archivo)..."
-	./generate_test_data.sh # Asume que el script .sh está en la raíz
+	chmod +x generate_test_data.sh
+	./generate_test_data.sh
 
-# ==============================================================================
-# REGLAS DE EJECUCIÓN Y LIMPIEZA
-# ==============================================================================
 
 # Variables de ejecución con valores por defecto
 NP ?= 1
@@ -83,4 +69,5 @@ run: all
 clean:
 	@echo "Limpiando archivos compilados y de salida..."
 	@rm -rf $(BUILD_DIR)
-	@$(RM) *.rle
+	@rm -r test_data
+	@rm -f *.rle
