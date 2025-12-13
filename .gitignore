@@ -92,10 +92,11 @@ Thumbs.db
 /docs/*.ind
 /docs/*.nlo
 /docs/*.nls
-/docs/*.bbl
+/docs/*.bbl*
 /docs/*.bcf
 /docs/*.blg
 /docs/*.run.xml
+
 
 # Directorios de compilación y archivos de TikZ/externalize
 /docs/*.temp.pdf
