@@ -63,6 +63,24 @@
     numbers=none
 }
 
+% --- Lenguaje C ---
+\lstdefinestyle{CStyle}{
+  language=C,
+  morekeywords={omp_set_num_threads,omp_get_thread_num,printf,exit}
+}
+
+% --- Lenguaje Bash ---
+\lstdefinelanguage{bash}{
+  morekeywords={echo, cd, ls, pwd, mkdir, rm, mv, cp, touch, cat, grep, find, chmod, chown, sudo},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]"
+}
+\lstdefinestyle{BashStyle}{
+  language=bash
+}
+
+
 % Diseño <<fancy>>
 \fancyhf{}
 
