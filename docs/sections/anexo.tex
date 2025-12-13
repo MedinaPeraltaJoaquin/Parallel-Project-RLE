@@ -1,0 +1,193 @@
+\begin{figure}[H]
+    \centering
+    \begin{algorithm}[H]
+    \caption{Algoritmo para comprimir en \texttt{RLE} con modo literal (Umbral $3$)}
+    \begin{algorithmic}[1]
+    \Procedure{comprimir}{$S$} \Comment{Cadena de símbolos $S$}
+    \State $N \gets longitud(S)$
+    \State $0 \gets []$ \Comment{Cadena de salida comprimida}
+    \State $p \gets 0$
+    \While{not $EOF$}
+        \State $i \gets 1$
+        \State $q \gets p + 1$
+        \Comment{Fase 1: Contar la secuencia}
+        \While{$q < N \text{ y } S[q] = S[p] \text{ y } i < 255$} \Comment{Máximo conteo en 1 byte}
+            \State $i \gets i + 1$
+            \State $q \gets q + 1$
+        \EndWhile
+        
+        \Comment{Fase 2: Aplicar el umbral y codificar}
+        \If{$i \geq 3$}
+            \Comment{Guardar como tupla RLE: $\langle \texttt{FLAG\_RLE}, i, S_{p} \rangle$}
+            \State $O \gets O \ \| \ \texttt{FLAG\_RLE} \ \| \ i \ \| \ S[p]$
+        \Else
+            \Comment{Guardar como secuencia literal: $S[p]$ se repite $i$ veces}
+            \For{$k \gets 0 \text{ hasta } i - 1$}
+                \State $O \gets O \ \| \ S[p]$
+            \EndFor
+        \EndIf
+        
+        \State $p \gets p + i$ \Comment{Mover el apuntador principal al inicio de la siguiente secuencia}
+    \EndWhile
+    \State \textbf{Salida:} $0$
+    \EndProcedure
+    \end{algorithmic}
+    \end{algorithm}
+    \caption{Algoritmo secuencial para comprimir}
+    \label{anexo:codigo.1}
+\end{figure}
+
+\begin{figure}[H] 
+    \centering 
+    \begin{algorithm}[H] 
+        \caption{Algoritmo para Descomprimir en \texttt{RLE} (Modo Extendido)} 
+        \begin{algorithmic}[1] 
+            \Procedure{descomprimir}{C} \Comment{Cadena de símbolos comprimidos C} 
+            \State $N \gets longitud(C)$ 
+            \State $0 \gets []$ \Comment{Cadena de salida descomprimida}
+            \State $p \gets 0$
+
+            \While{$p < N_C$}
+                \State $S \gets C[p]$ \Comment{Leer el símbolo actual (byte de control o literal)}
+                
+                \If{$S = \texttt{FLAG\_RLE}$}
+                    \If{$p + 2 \geq N_C$} 
+                        \State $break$ \Comment{Error: Buffer incompleto} 
+                    \EndIf
+                    
+                    \State $i \gets C[p+1]$ \Comment{Leer el conteo (longitud)}
+                    \State $V \gets C[p+2]$ \Comment{Leer el valor del símbolo}
+                    
+                    \For{$k \gets 1 \text{ hasta } i$}
+                        \State $O \gets O \ \| \ V$ \Comment{Escribir el valor $V$ el número de veces $i$}
+                    \EndFor
+                    \State $p \gets p + 3$ \Comment{Avanzar el apuntador 3 posiciones (FLAG, Conteo, Valor)}
+                    
+                \ElsIf{$S = \texttt{FLAG\_LITERAL}$} \Comment{Símbolo $FLAG$ escapado}
+                    \If{$p + 1 \geq N_C$} 
+                        \State $break$ \Comment{Error: Buffer incompleto} 
+                    \EndIf
+                    
+                    \State $V \gets C[p+1]$ \Comment{Leer el siguiente byte (que es un FLAG real)}
+                    \State $O \gets O \ \| \ V$ \Comment{Escribir el byte escapado}
+                    \State $p \gets p + 2$ \Comment{Avanzar 2 posiciones (FLAG\_LITERAL, Valor)}
+                    
+                \Else \Comment{Símbolo sin repetición}
+                    \State $O \gets O \ \| \ S$ \Comment{Escribir el símbolo literal actual $S$}
+                    \State $p \gets p + 1$ \Comment{Avanzar 1 posición}
+                \EndIf
+            \EndWhile
+        \State \textbf{Salida:} $O$
+        \EndProcedure
+        \end{algorithmic}
+    \end{algorithm}
+        \caption{Algoritmo secuencial para descomprimir}
+    \label{anexo:codigo.2}
+\end{figure}
+
+\begin{figure}[H] 
+    \centering 
+    \begin{algorithm}[H] \caption{Algoritmo para comprimir en \texttt{RLE} en paralelo} 
+        \begin{algorithmic}[1]
+            \Procedure{comprimir\_paralelo}{S,N} 
+                \Comment{$S$ entrada y $N$ número de procesos} \\
+                \Comment{Lógica del Coordinador (Pre-procesamiento)}
+                \State $Global\_Size \gets longitud(S)$ 
+                \For{$id \gets 0 \ldots N - 1$} 
+                    \State $\text{OffsetStart}$
+                    \State $SizeChunk \gets calculate\_chunk(id,Global\_Size,S) $
+                    \State $Chunkid \gets S[OffsetStart \ldots OffsetStart + SizeChunk +1]$ 
+                    
+                    \Comment{Incluye 1 byte de frontera} 
+                    \State $\text{Enviar}(Chunkid) \text{ a } N\_id$
+                \EndFor 
+                \State $Sincronizar()$
+
+                \Comment{Lógica del Trabajador}
+                \State $\text{Input}_{\text{T}} \gets \textbf{Recibir}(\text{Chunk}_{\text{id}})$
+                \State $\text{Input}_{\text{Main}} \gets \text{Input}_{\text{T}}[\text{datos principales}]$
+                \State $\text{Byte}_{\text{Next}} \gets \text{Input}_{\text{T}}[\text{byte de frontera}]$
+                \State $\text{Output}_{\text{local}} \gets \text{Comprimir\_Secuencial}(\text{Input}_{\text{Main}})$ 
+                \Comment{Usa RLE Extendido}
+                
+                \\
+                \Comment{Corrección de Fronteras (Comunicación/Sincronización)}
+                \If{$id < N - 1$}
+                    \State $\text{Enviar\_Front}(\text{Output}_{\text{local}}.\text{último\_bloque}) \text{ a } \text{Trabajador}_{\text{id}+1}$
+                    \State $\text{Recibir\_Front}(\text{Señal}_{\text{Fus}}) \text{ de } \text{Trabajador}_{\text{id}+1}$
+                    \If{$\text{Señal}_{\text{Fus}} = \text{FUSIONADO}$}
+                        \State $\text{Output}_{\text{local}}.\text{Eliminar\_último\_bloque}()$
+                    \EndIf
+                \EndIf
+                
+                \If{$id > 0$}
+                    \State $\text{Recibir\_Front}(\text{Bloque}_{\text{Prev}}) \text{ de } \text{Trabajador}_{\text{id}-1}$
+                    \State $\text{Intentar\_Fusion}(\text{Output}_{\text{local}}.\text{primero}, \text{Bloque}_{\text{Prev}})$
+                    \State $\text{Enviar\_Front}(\text{Señal}_{\text{Fus}}) \text{ a } \text{Trabajador}_{\text{id}-1}$
+                \EndIf
+                
+                \State $\textbf{Enviar}(\text{Output}_{\text{local}}) \text{ al Coordinador}$
+                \State $\textbf{Sincronizar}()$
+                
+                \Comment{Lógica del Coordinador (Post-procesamiento)}
+                \State $\text{Recibir\_Buffers}(\text{Todos los trabajadores})$
+                \State $\text{Len}_{\text{Acumulada}} \gets \text{Calcular\_Suma\_Prefijo}(\text{Longitudes\_locales})$
+                \State $O_{\text{comp}} \gets \text{Concatenar}(\text{Buffers recibidos}, \text{Len}_{\text{Acumulada}})$
+                \State \textbf{Salida:} $O_{\text{comp}}$
+            \EndProcedure
+        \end{algorithmic}
+    \end{algorithm}
+    \caption{Algoritmo paralelo para comprimir}
+    \label{anexo:codigo.3}
+\end{figure}
+
+\begin{figure}[H] 
+    \centering 
+    \begin{algorithm}[H] \caption{Algoritmo para descomprimir en \texttt{RLE} en paralelo} 
+        \begin{algorithmic}[1]
+            \Procedure{descomprimir\_paralelo}{C,$N$}
+                \Comment{$C$ entrada comprimida y $N$ número de procesos} \\
+                \Comment{Lógica del Coordinador (Pre-procesamiento)}
+                \State $Par_{count} \gets read\_Metadato(C)$ 
+                \Comment{Número total de pares/bloques} 
+                \For{$id \gets 0 \ldots N -1$} 
+                    \State $Offset_{par},Size_{par} \gets Calcular\_Particion\_Pares(id,Par_{count})$ 
+                    \State $Chunk_{id} \gets C[Offset_{par} \ldots Offset_{par} + Size_{par}]$ 
+                    \Comment{Lectura de porción de pares}
+                    \State $\text{Enviar}(Chunkid) \text{ a } N\_id$
+                \EndFor 
+                \State $Sincronizar()$
+                \\
+                \Comment{Lógica del Trabajador}
+                \State $\text{Input}_{\text{T}} \gets \textbf{Recibir}(\text{Chunk}_{\text{id}})$
+                \State $\text{Output}_{\text{local}} \gets \text{Descomprimir\_Secuencial}(\text{Input}_{\text{T}})$ 
+                \Comment{Genera bytes sin comprimir}
+                \State $\text{Len}_{\text{local}} \gets \text{longitud}(\text{Output}_{\text{local}})$
+                
+                \\
+                \Comment{Cálculo del Offset Global (Suma Prefijo)}
+                \State $\textbf{Enviar}(\text{Len}_{\text{local}}) \text{ a Concentrador}$
+                \State $\textbf{Sincronizar}()$
+                
+                \State $\text{Recibir}(\text{Todas\_Len}_{\text{local}})$
+                \State $\text{Offset}_{\text{Final}} \gets \text{Calcular\_Suma\_Prefijo}(\text{Todas\_Len}_{\text{local}})[\text{id}]$ 
+                \\
+                \Comment{Cada trabajador conoce dónde escribir}
+                
+                \State $\textbf{Escribir\_en\_Posicion\_Global}(O_{\text{descomp}}, \text{Offset}_{\text{Final}}, \text{Output}_{\text{local}})$ 
+                \\
+                \Comment{Escritura dispersa}
+                
+
+                \State $\textbf{Sincronizar}()$
+                
+                \\
+                \Comment{Lógica del Coordinador (Post-procesamiento)}
+                \State $\text{Finalizar\_Archivo}(O_{\text{descomp}})$
+                \State \textbf{Salida:} $O_{\text{descomp}}$
+            \EndProcedure
+        \end{algorithmic}
+    \end{algorithm}
+    \caption{Algoritmo paralelo para descomprimir}
+    \label{anexo:codigo.4}
+\end{figure}
