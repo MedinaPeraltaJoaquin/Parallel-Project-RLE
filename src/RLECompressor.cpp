@@ -24,19 +24,16 @@ vector<uint8_t> RLECompressor::Comprimir_Local(const vector<uint8_t>& buffer) {
         uint8_t valor_actual = buffer[i];
         size_t j = i;
         
-        // Contar la secuencia de repetición (máximo 255)
         while (j < buffer.size() && buffer[j] == valor_actual && (j - i) < 255) {
             j++;
         }
         size_t conteo = j - i;
 
         if (conteo >= RLE_THRESHOLD) {
-            // MODO DE REPETICIÓN (RLE): [FLAG_RLE] [CONTEO] [VALOR]
             salida.push_back(FLAG_RLE); 
             salida.push_back((uint8_t)conteo); 
             salida.push_back(valor_actual); 
         } else {
-            // MODO LITERAL (Escribir los bytes directamente)
             for (size_t k = 0; k < conteo; ++k) {
                 uint8_t literal_byte = buffer[i + k];
                 
@@ -342,6 +339,158 @@ void RLECompressor::RunSequential(const std::string& input_file, const std::stri
     ofstream ofs(output_file, ios::binary);
     if (ofs.is_open()) {
         ofs.write((const char*)compressed.data(), compressed.size());
+        ofs.close();
+    } else {
+        cerr << "ERROR: No se pudo abrir el archivo de salida para escritura: " << output_file << endl;
+    }
+}
+
+void RLECompressor::RunParallelDecompress(const std::string& input_file, const std::string& output_file, int rank, int size) {
+    Timer t;
+    MPI_File fh;
+    MPI_Offset compressed_file_size_mpi;
+    
+    // Abrir y obtener tamaño del archivo comprimido
+    int error = MPI_File_open(MPI_COMM_WORLD, input_file.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (error != MPI_SUCCESS) {
+        if (rank == 0) std::cerr << "P" << rank << ": Error al abrir el archivo comprimido: " << input_file << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    MPI_File_get_size(fh, &compressed_file_size_mpi);
+    size_t compressed_file_size = (size_t)compressed_file_size_mpi;
+
+    // 1. Distribución de datos comprimidos
+    size_t chunk_base_size = compressed_file_size / size;
+    size_t remainder = compressed_file_size % size;
+    size_t my_chunk_size = chunk_base_size + ((size_t)rank < remainder ? 1 : 0);
+    
+    size_t offset_start = ((size_t)rank < remainder) 
+                   ? ((size_t)rank * (chunk_base_size + 1)) 
+                   : ((size_t)rank * chunk_base_size + remainder);
+
+    const size_t OVERLAP_BYTES = 2; 
+    size_t overlap_read = 0;
+    MPI_Offset read_offset = offset_start;
+    
+    if (rank > 0) {
+        if (offset_start >= OVERLAP_BYTES) {
+            read_offset -= OVERLAP_BYTES;
+            overlap_read = OVERLAP_BYTES;
+        } else {
+            read_offset = 0;
+            overlap_read = offset_start;
+        }
+    }
+    
+    size_t read_size = my_chunk_size + overlap_read;
+    
+    std::vector<uint8_t> compressed_buffer_in(read_size);
+    if (read_size > 0) {
+        MPI_File_read_at(fh, read_offset, compressed_buffer_in.data(), read_size, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+    }
+    MPI_File_close(&fh);
+
+    std::vector<uint8_t> local_decompressed_output = Descomprimir_Local(compressed_buffer_in);
+    
+    size_t decompressed_bytes_from_overlap = 0;
+    
+    if (rank > 0 && overlap_read > 0) {
+        size_t c_idx = 0;
+        
+        while (c_idx < overlap_read) {
+            uint8_t byte = compressed_buffer_in[c_idx];
+
+            if (byte == FLAG_RLE) {
+                if (c_idx + 3 <= overlap_read) {
+                    decompressed_bytes_from_overlap += compressed_buffer_in[c_idx + 1]; // Suma el CONTEO
+                    c_idx += 3;
+                } else {
+                    break;
+                }
+            } else if (byte == FLAG_LITERAL) {
+                if (c_idx + 2 <= overlap_read) {
+                    decompressed_bytes_from_overlap += 1;
+                    c_idx += 2;
+                } else {
+                    break;
+                }
+            } else {
+                decompressed_bytes_from_overlap += 1;
+                c_idx += 1;
+            }
+        }
+        
+        if (decompressed_bytes_from_overlap > 0 && decompressed_bytes_from_overlap <= local_decompressed_output.size()) {
+            local_decompressed_output.erase(local_decompressed_output.begin(), local_decompressed_output.begin() + decompressed_bytes_from_overlap);
+        }
+    }
+    
+    int local_len = local_decompressed_output.size();
+    std::vector<int> global_lengths(size);
+    
+    MPI_Gather(&local_len, 1, MPI_INT, global_lengths.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    std::vector<int> displacements(size, 0);
+    size_t total_decompressed_size = 0;
+    std::vector<uint8_t> global_decompressed_output;
+
+    if (rank == 0) {
+        for (int i = 0; i < size; ++i) {
+            displacements[i] = (i > 0) ? (displacements[i-1] + global_lengths[i-1]) : 0;
+            total_decompressed_size += global_lengths[i];
+        }
+        global_decompressed_output.resize(total_decompressed_size);
+    }
+    
+    MPI_Gatherv(
+        local_decompressed_output.data(), local_len, MPI_UNSIGNED_CHAR,
+        global_decompressed_output.data(), global_lengths.data(), displacements.data(), 
+        MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD
+    );
+
+    if (rank == 0) {
+        double elapsed = t.stop();
+        std::cout << "\n--- Resultado de Descompresión Paralela (" << size << " P) ---" << std::endl;
+        std::cout << "Tiempo: " << std::fixed << std::setprecision(4) << elapsed << " s" << std::endl;
+        std::cout << "Tamaño Comprimido: " << compressed_file_size << " B" << std::endl;
+        std::cout << "Tamaño Descomprimido: " << total_decompressed_size << " B" << std::endl;
+
+        std::ofstream ofs(output_file, std::ios::binary);
+        if (ofs.is_open()) {
+            ofs.write((const char*)global_decompressed_output.data(), total_decompressed_size);
+            ofs.close();
+        } else {
+            std::cerr << "P0: ERROR al abrir el archivo de salida para escritura: " << output_file << std::endl;
+        }
+    }
+}
+
+void RLECompressor::RunSequentialDecompress(const std::string& input_file, const std::string& output_file) {
+    Timer t;
+    ifstream is(input_file, ios::binary | ios::ate);
+    if (!is.is_open()) {
+        cerr << "ERROR: No se pudo abrir el archivo comprimido: " << input_file << endl;
+        return;
+    }
+
+    size_t size = is.tellg();
+    is.seekg(0, ios::beg);
+
+    vector<uint8_t> buffer(size);
+    is.read((char*)buffer.data(), size);
+    is.close();
+
+    vector<uint8_t> decompressed = Descomprimir_Local(buffer);
+
+    double elapsed = t.stop();
+    cout << "--- Resultado de Descompresión Secuencial (T1) ---" << endl;
+    cout << "Tiempo: " << fixed << setprecision(4) << elapsed << " s" << endl;
+    cout << "Tamaño Comprimido: " << size << " B" << endl;
+    cout << "Tamaño Descomprimido: " << decompressed.size() << " B" << endl;
+
+    ofstream ofs(output_file, ios::binary);
+    if (ofs.is_open()) {
+        ofs.write((const char*)decompressed.data(), decompressed.size());
         ofs.close();
     } else {
         cerr << "ERROR: No se pudo abrir el archivo de salida para escritura: " << output_file << endl;

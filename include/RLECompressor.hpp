@@ -11,7 +11,10 @@ public:
     // Puntos de entrada
     static void RunParallel(const std::string& input_file, const std::string& output_file, int rank, int size);
     static void RunSequential(const std::string& input_file, const std::string& output_file);
-    // Funciones esenciales de RLE (implementadas con Modo Literal/RLE Extendido)
+    
+    static void RunParallelDecompress(const std::string& input_file, const std::string& output_file, int rank, int size);
+    static void RunSequentialDecompress(const std::string& input_file, const std::string& output_file);
+
     static std::vector<uint8_t> Comprimir_Local(const std::vector<uint8_t>& buffer);
     static std::vector<uint8_t> Descomprimir_Local(const std::vector<uint8_t>& compressed_buffer);
     // Funciones de MPI
