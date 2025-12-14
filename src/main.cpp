@@ -46,13 +46,13 @@ int main(int argc, char* argv[]) {
     if (sequential_mode) {
         if (rank == 0) {
             cout << "  - Ejecutando: Compresion RLE Extendido Secuencial" << endl;
-            //RLECompressor::RunSequential(input_file, output_file);
+            RLECompressor::RunSequential(input_file, output_file);
         }
     } else {
         if (rank == 0) {
             cout << "  - Ejecutando: Compresion RLE Extendido Paralelo" << endl;
         }
-        //RLECompressor::RunParallel(input_file, output_file, rank, size);
+        RLECompressor::RunParallel(input_file, output_file, rank, size);
     }
 
     MPI_Finalize();

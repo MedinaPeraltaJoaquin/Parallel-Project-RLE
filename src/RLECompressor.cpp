@@ -93,8 +93,49 @@ vector<uint8_t> Descomprimir_Local_Test(const vector<uint8_t>& compressed_buffer
     return RLECompressor::Descomprimir_Local(compressed_buffer);
 }
 
-void RLECompressor::Leer_Bloque_MPIIO(const std::string& input_file, int rank, int size, std::vector<uint8_t>& buffer_in, size_t& global_file_size) {
+
+void RLECompressor::Leer_Bloque_MPIIO(
+    const std::string& input_file, 
+    int rank, 
+    int size, 
+    std::vector<uint8_t>& buffer_in, 
+    size_t& global_file_size,
+    size_t& offset_start
+) {
+    MPI_File fh;
+    int error;
+
+    error = MPI_File_open(MPI_COMM_WORLD, input_file.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (error != MPI_SUCCESS) {
+        std::cerr << "P" << rank << ": Error al abrir el archivo: " << input_file << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    MPI_Offset file_size_mpi;
     
+    MPI_File_get_size(fh, &file_size_mpi);
+    global_file_size = (size_t)file_size_mpi;
+
+    size_t chunk_base_size = global_file_size / size;
+    size_t remainder = global_file_size % size;
+    
+    size_t my_chunk_size = chunk_base_size;
+    if ((size_t)rank < remainder) {
+        my_chunk_size += 1;
+    }
+
+    offset_start = ((size_t)rank < remainder) 
+                   ? ((size_t)rank * (chunk_base_size + 1)) 
+                   : ((size_t)rank * chunk_base_size + remainder);
+
+    int extra_byte_to_read = (rank < size - 1) ? 1 : 0; 
+    size_t read_size = my_chunk_size + extra_byte_to_read;
+    
+    buffer_in.resize(read_size);
+    
+    MPI_File_read_at(fh, offset_start, buffer_in.data(), read_size, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+    
+    MPI_File_close(&fh);
 }
 
 void RLECompressor::Corregir_Fronteras(std::vector<uint8_t>& local_output, int rank, int size, std::vector<uint8_t>& byte_de_frontera_leido) {
