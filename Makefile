@@ -15,6 +15,9 @@ TARGET = rle_parallel
 TEST_SRC = $(TEST_DIR)/RLE_tests.cpp
 TEST_TARGET = $(BUILD_DIR)/rle_tests
 
+TEST_MPI_SRC = $(TEST_DIR)/mpi_io_tests.cpp
+TEST_MPI_TARGET = $(BUILD_DIR)/mpi_io_tests
+
 # Archivos fuente y objeto
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
@@ -44,6 +47,26 @@ $(TEST_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/RLE_tests.o
 $(BUILD_DIR)/RLE_tests.o: $(TEST_SRC)
 	@echo "Compilando unit test file..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# ==============================================================================
+# REGLAS DE PRUEBAS Y GENERACIÓN DE DATOS (Añadir test_mpi_io)
+# ==============================================================================
+
+# Compilación del archivo objeto del test MPI
+$(BUILD_DIR)/mpi_io_tests.o: $(TEST_MPI_SRC)
+	@echo "Compilando test MPI-IO..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Enlace del ejecutable de prueba MPI
+$(TEST_MPI_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/mpi_io_tests.o
+	@echo "Enlazando test MPI-IO..."
+	$(CXX) $^ -o $@
+
+# Nuevo objetivo 'test_mpi_io'
+test_mpi_io: setup $(TEST_MPI_TARGET)
+	@echo "--------------------------------------------------------"
+	@echo "Ejecutando prueba de I/O distribuida con 4 procesos..."
+	mpirun -np 4 $(TEST_MPI_TARGET)
 
 test: setup $(TEST_TARGET)
 	@echo "--------------------------------------------------------"
