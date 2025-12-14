@@ -11,7 +11,7 @@ TEST_DIR = tests
 CXXFLAGS = -O3 -Wall -std=c++17 -I$(INC_DIR) -g
 
 # Nombres de archivos
-TARGET = rle_parallel
+TARGET = rle_compressor
 TEST_SRC = $(TEST_DIR)/RLE_tests.cpp
 TEST_TARGET = $(BUILD_DIR)/rle_tests
 
@@ -31,7 +31,7 @@ TEST_SEQ_TARGET = $(BUILD_DIR)/sequential_tests
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-.PHONY: all setup clean run test test_sequential test_boundary test_all_boundary test_mpi_io generate_data
+.PHONY: all setup clean run test test_sequential test_boundary test_all_boundary test_mpi_io generate_data benchmark clean_data
 all: setup $(BUILD_DIR)/$(TARGET)
 
 setup:
@@ -56,11 +56,6 @@ $(BUILD_DIR)/RLE_tests.o: $(TEST_SRC)
 	@echo "Compilando unit test file..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-
-# ==============================================================================
-# REGLAS DE COMPILACIÓN DE TESTS
-# ==============================================================================
-
 # Compilación del archivo objeto del test MPI
 $(BUILD_DIR)/mpi_io_tests.o: $(TEST_MPI_SRC)
 	@echo "Compilando test MPI-IO..."
@@ -81,8 +76,6 @@ $(TEST_BND_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/boundary_tests.o
 	@echo "Enlazando test de Fronteras (Single)..."
 	$(CXX) $^ -o $@
 
-# === INICIO: REGLAS FALTANTES PARA boundary_all_tests ===
-
 # Compilación del archivo objeto del test de Fronteras (ALL)
 $(BUILD_DIR)/boundary_all_tests.o: $(TEST_ALL_BND_SRC)
 	@echo "Compilando test de Fronteras RLE (ALL)..."
@@ -92,8 +85,6 @@ $(BUILD_DIR)/boundary_all_tests.o: $(TEST_ALL_BND_SRC)
 $(TEST_ALL_BND_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/boundary_all_tests.o
 	@echo "Enlazando test de Fronteras (ALL)..."
 	$(CXX) $^ -o $@
-
-# === FIN: REGLAS FALTANTES ===
 
 # Compilación del archivo objeto del test secuencial
 $(BUILD_DIR)/sequential_tests.o: $(TEST_SEQ_SRC)
@@ -105,9 +96,6 @@ $(TEST_SEQ_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/sequential_tests.o
 	@echo "Enlazando test Secuencial..."
 	$(CXX) $^ -o $@
 
-# ==============================================================================
-# OBJETIVOS DE EJECUCIÓN
-# ==============================================================================
 
 # Objetivo 'test_sequential'
 test_sequential: setup $(TEST_SEQ_TARGET)
@@ -143,6 +131,13 @@ generate_data: setup
 	chmod +x generate_test_data.sh
 	./generate_test_data.sh
 
+# Regla para generar benchmark
+benchmark: all generate_data
+	@echo "--------------------------------------------------------"
+	@echo "INICIANDO BENCHMARK: Secuencial vs Paralelo (2, 4, 6, 10, 20, 50 P)"
+	@echo "--------------------------------------------------------"
+	@chmod +x run_benchmarks.sh
+	./run_benchmarks.sh
 
 # Variables de ejecución con valores por defecto
 NP ?= 1
@@ -158,3 +153,11 @@ clean:
 	@rm -rf $(BUILD_DIR)
 	@rm -r test_data
 	@rm -f *.rle
+
+clean_data:
+	@echo "Limpiando archivos de prueba (*.bin, *.rle, *.csv)..."
+	$(RM) $(wildcard test_data/*.bin)
+	$(RM) $(wildcard test_data/*.rle)
+	$(RM) $(wildcard benchmark_results_*.csv)
+	@echo "Limpiando archivos de registro temporal (*.txt)..."
+	find . -name "temp_log_*.txt" -delete
