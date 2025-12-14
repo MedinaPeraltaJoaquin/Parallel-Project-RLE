@@ -15,7 +15,7 @@ public:
     static std::vector<uint8_t> Comprimir_Local(const std::vector<uint8_t>& buffer);
     static std::vector<uint8_t> Descomprimir_Local(const std::vector<uint8_t>& compressed_buffer);
     // Funciones de MPI
-    static void Corregir_Fronteras(std::vector<uint8_t>& local_output, int rank, int size, std::vector<uint8_t>& byte_de_frontera_leido);
+    static void Corregir_Fronteras(std::vector<uint8_t>& local_output, const std::vector<uint8_t>& buffer_leido, size_t chunk_size, int rank, int size);
     static void Leer_Bloque_MPIIO(const std::string& input_file, int rank, int size, std::vector<uint8_t>& buffer_in, size_t& global_file_size,size_t& offset_start);
 };
 
