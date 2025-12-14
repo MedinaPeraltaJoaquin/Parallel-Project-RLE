@@ -57,24 +57,21 @@ vector<uint8_t> RLECompressor::Descomprimir_Local(const vector<uint8_t>& compres
         uint8_t byte = compressed_buffer[i];
 
         if (byte == FLAG_RLE) {
-            // MODO RLE: Esperar CONTEO y VALOR
             if (i + 2 >= compressed_buffer.size()) break; 
             
             uint8_t conteo = compressed_buffer[i + 1];
             uint8_t valor = compressed_buffer[i + 2];
             
             for (int k = 0; k < conteo; ++k) salida.push_back(valor);
-            i += 3; // Flag + Conteo + Valor
+            i += 3;
 
         } else if (byte == FLAG_LITERAL) {
-            // MODO ESCAPE LITERAL
             if (i + 1 >= compressed_buffer.size()) break;
             
             salida.push_back(compressed_buffer[i + 1]);
             i += 2;
         }
         else {
-            // MODO LITERAL DIRECTO
             salida.push_back(byte);
             i += 1;
         }
@@ -82,7 +79,6 @@ vector<uint8_t> RLECompressor::Descomprimir_Local(const vector<uint8_t>& compres
     return salida;
 }
 
-// Funciones auxiliares para pruebas
 vector<uint8_t> Comprimir_Local_Test(const vector<uint8_t>& buffer) {
     return RLECompressor::Comprimir_Local(buffer);
 }

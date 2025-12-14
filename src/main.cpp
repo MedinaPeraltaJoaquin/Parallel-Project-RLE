@@ -37,7 +37,6 @@ int main(int argc, char* argv[]) {
     bool sequential_mode = false;
     bool decompress_mode = false;
 
-    // Parsear opciones
     for (int i = 2; i < argc; ++i) {
         string arg = argv[i];
         if (arg == "--secuencial") {
@@ -53,10 +52,8 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    // Determinar nombre de archivo de salida si no se especificó
     if (output_file.empty()) {
         if (decompress_mode) {
-            // Intentar eliminar la extensión .rle
             size_t pos = input_file.find(".rle");
             if (pos != string::npos && pos == input_file.length() - 4) {
                  output_file = input_file.substr(0, pos);
@@ -80,7 +77,7 @@ int main(int argc, char* argv[]) {
             }
             RLECompressor::RunParallelDecompress(input_file, output_file, rank, size);
         }
-    } else { // Modo Compresión
+    } else {
         if (sequential_mode) {
             if (rank == 0) {
                 cout << "  - Ejecutando: Compresion RLE Extendido Secuencial" << endl;
