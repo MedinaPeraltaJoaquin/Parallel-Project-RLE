@@ -1,7 +1,4 @@
 #!/bin/bash
-# ----------------------------------------------------------------------
-# SCRIPT DE GENERACIÓN DE DATOS BINARIOS PARA PRUEBAS DE EFICIENCIA
-# ----------------------------------------------------------------------
 
 # Tamaño en bytes (Ej: 100 MB)
 SIZE_MB=100
