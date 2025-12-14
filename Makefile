@@ -21,6 +21,9 @@ TEST_MPI_TARGET = $(BUILD_DIR)/mpi_io_tests
 TEST_BND_SRC = $(TEST_DIR)/boundary_tests.cpp
 TEST_BND_TARGET = $(BUILD_DIR)/boundary_tests
 
+TEST_ALL_BND_SRC = $(TEST_DIR)/boundary_all_tests.cpp
+TEST_ALL_BND_TARGET = $(BUILD_DIR)/boundary_all_tests
+
 TEST_SEQ_SRC = $(TEST_DIR)/sequential_tests.cpp
 TEST_SEQ_TARGET = $(BUILD_DIR)/sequential_tests
 
@@ -28,8 +31,7 @@ TEST_SEQ_TARGET = $(BUILD_DIR)/sequential_tests
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-.PHONY: all setup clean run test generate_data
-
+.PHONY: all setup clean run test test_sequential test_boundary test_all_boundary test_mpi_io generate_data
 all: setup $(BUILD_DIR)/$(TARGET)
 
 setup:
@@ -56,7 +58,7 @@ $(BUILD_DIR)/RLE_tests.o: $(TEST_SRC)
 
 
 # ==============================================================================
-# REGLAS DE PRUEBAS Y GENERACIÓN DE DATOS (Añadir test_mpi_io)
+# REGLAS DE COMPILACIÓN DE TESTS
 # ==============================================================================
 
 # Compilación del archivo objeto del test MPI
@@ -76,8 +78,23 @@ $(BUILD_DIR)/boundary_tests.o: $(TEST_BND_SRC)
 
 # Enlace del ejecutable de prueba de Fronteras
 $(TEST_BND_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/boundary_tests.o
-	@echo "Enlazando test de Fronteras..."
+	@echo "Enlazando test de Fronteras (Single)..."
 	$(CXX) $^ -o $@
+
+# === INICIO: REGLAS FALTANTES PARA boundary_all_tests ===
+
+# Compilación del archivo objeto del test de Fronteras (ALL)
+$(BUILD_DIR)/boundary_all_tests.o: $(TEST_ALL_BND_SRC)
+	@echo "Compilando test de Fronteras RLE (ALL)..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Enlace del ejecutable de prueba de Fronteras (ALL)
+$(TEST_ALL_BND_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/boundary_all_tests.o
+	@echo "Enlazando test de Fronteras (ALL)..."
+	$(CXX) $^ -o $@
+
+# === FIN: REGLAS FALTANTES ===
+
 # Compilación del archivo objeto del test secuencial
 $(BUILD_DIR)/sequential_tests.o: $(TEST_SEQ_SRC)
 	@echo "Compilando test Secuencial RLE..."
@@ -87,6 +104,10 @@ $(BUILD_DIR)/sequential_tests.o: $(TEST_SEQ_SRC)
 $(TEST_SEQ_TARGET): $(BUILD_DIR)/RLECompressor.o $(BUILD_DIR)/sequential_tests.o
 	@echo "Enlazando test Secuencial..."
 	$(CXX) $^ -o $@
+
+# ==============================================================================
+# OBJETIVOS DE EJECUCIÓN
+# ==============================================================================
 
 # Objetivo 'test_sequential'
 test_sequential: setup $(TEST_SEQ_TARGET)
@@ -99,6 +120,11 @@ test_boundary: setup $(TEST_BND_TARGET)
 	@echo "--------------------------------------------------------"
 	@echo "Ejecutando prueba de Fronteras RLE con 2 procesos (mínimo)."
 	mpirun -np 2 $(TEST_BND_TARGET)
+
+test_all_boundary:  setup $(TEST_ALL_BND_TARGET)
+	@echo "--------------------------------------------------------"
+	@echo "Ejecutando prueba de Fronteras RLE con 2 procesos (mínimo)."
+	mpirun -np 2 $(TEST_ALL_BND_TARGET)
 
 # Nuevo objetivo 'test_mpi_io'
 test_mpi_io: setup $(TEST_MPI_TARGET)
