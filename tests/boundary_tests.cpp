@@ -84,23 +84,18 @@ void run_boundary_test(int rank, int size) {
             cout << ">>> EJECUTANDO CASO DE PRUEBA: " << test_case_names[t] << " <<<" << endl;
             cout << "========================================================================" << endl;
             
-            // 1. Crear el archivo de prueba para el caso actual
             original_data = create_test_file(INPUT_FILE, test_case);
         }
         
         MPI_Barrier(MPI_COMM_WORLD);
         
-        // 2. Ejecutar la Compresión Paralela
         RLECompressor::RunParallel(INPUT_FILE, OUTPUT_FILE, rank, size);
 
-        // 3. Verificación Exacta Byte a Byte (Solo Rank 0)
         if (rank == 0) {
             cout << "\n--- Verificación Exacta Byte a Byte ---" << endl;
             
-            // 3a. Generar el resultado comprimido IDEAL (secuencial)
             vector<uint8_t> expected_compressed = RLECompressor::Comprimir_Local(original_data);
             
-            // 3b. Cargar el resultado producido por la versión paralela
             ifstream ifs(OUTPUT_FILE, ios::binary | ios::ate);
             if (!ifs) {
                 cerr << "ERROR: No se pudo abrir el archivo de salida para verificación: " << OUTPUT_FILE << endl;
@@ -114,24 +109,21 @@ void run_boundary_test(int rank, int size) {
             ifs.read((char*)actual_compressed.data(), actual_size);
             ifs.close();
 
-            // 3c. Comparar
             if (actual_compressed.size() == expected_compressed.size() &&
                 memcmp(actual_compressed.data(), expected_compressed.data(), actual_size) == 0) {
                 
-                cout << "✅ ÉXITO: El resultado comprimido coincide byte a byte con la versión secuencial ideal." << endl;
+                cout << "ÉXITO: El resultado comprimido coincide byte a byte con la versión secuencial ideal." << endl;
 
             } else {
-                cout << "❌ FALLO: El resultado comprimido NO coincide con la versión secuencial." << endl;
-                cout << "  Tamaño esperado: " << expected_compressed.size() << " B, Real: " << actual_size << " B" << endl;
+                cout << "FALLO: El resultado comprimido NO coincide con la versión secuencial." << endl;
+                cout << "Tamaño esperado: " << expected_compressed.size() << " B, Real: " << actual_size << " B" << endl;
                 
-                // Imprimir para depuración
                 cout << "  Esperado (Hex): "; for (uint8_t b : expected_compressed) printf("%02X ", b); cout << endl;
                 cout << "  Real (Hex):     "; for (uint8_t b : actual_compressed) printf("%02X ", b); cout << endl;
 
-                assert(false); // Forzar fallo
+                assert(false);
             }
             
-            // Limpieza después de cada prueba
             remove(INPUT_FILE.c_str());
             remove(OUTPUT_FILE.c_str());
         }

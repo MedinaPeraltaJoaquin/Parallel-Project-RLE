@@ -39,12 +39,8 @@ void run_full_test_cycle(int rank, int size, const vector<uint8_t>& original_dat
     }
     MPI_Barrier(MPI_COMM_WORLD);
     
-    // ==========================================================
-    // 1. COMPRESIÓN PARALELA Y VERIFICACIÓN DE FRONTERA
-    // ==========================================================
     RLECompressor::RunParallel(INPUT_FILE, OUTPUT_FILE, rank, size);
 
-    // 2. Verificación Exacta Byte a Byte de Compresión (Solo Rank 0)
     if (rank == 0) {
         cout << "\n--- Verificación Compresión (" << case_name << ") ---" << endl;
         
@@ -83,10 +79,6 @@ void run_full_test_cycle(int rank, int size, const vector<uint8_t>& original_dat
     }
     
     MPI_Barrier(MPI_COMM_WORLD);
-
-    // ==========================================================
-    // 3. DESCOMPRESIÓN PARALELA Y VERIFICACIÓN FINAL
-    // ==========================================================
     
     // Ejecutar la descompresión paralela
     RLECompressor::RunParallelDecompress(OUTPUT_FILE, DECOMPRESSED_FILE, rank, size);
@@ -156,7 +148,6 @@ int main(int argc, char* argv[]) {
     // --- DEFINICIÓN DE CASOS DE PRUEBA ---
     
     // Caso 1: AAAABBB AA (9 bytes) - (r,4,A) | (r,3,B) (l,2,A) -> Boundary en medio del token B (Split por 5/4 bytes)
-    // El fallo original ocurría aquí (P0: AAAAB, P1: BB AA)
     vector<uint8_t> case1_data = {
         65, 65, 65, 65, 66, 66, 66, 65, 65, // AAAA BBB AA
     }; 
@@ -165,7 +156,6 @@ int main(int argc, char* argv[]) {
 
     // Caso 2: AAAABBBB (8 bytes) - (r,4,A) | (r,4,B) -> Boundary EXACTAMENTE después del token A
     // P0: AAAA (4 bytes), P1: BBBB (4 bytes)
-    // Fuerza a P1 a leer el FLAG [FF] del token A si el solapamiento es 2.
     vector<uint8_t> case2_data = {
         65, 65, 65, 65, 66, 66, 66, 66, // AAAA BBBB
     }; 
@@ -174,7 +164,6 @@ int main(int argc, char* argv[]) {
 
     // Caso 3: C A B B B C (6 bytes) - l,1,C l,1,A (r,3,B) l,1,C -> Boundary en medio del token B (Split por 3/3 bytes)
     // P0: C A B, P1: B B C
-    // Este caso asegura que P0 envíe el 'B' incompleto a P1 para fusión.
     vector<uint8_t> case3_data = {
         67, 65, 66, 66, 66, 67, // C A B B B C
     }; 

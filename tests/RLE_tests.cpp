@@ -74,7 +74,6 @@ void test_inversion_completa() {
 }
 
 int main(int argc, char* argv[]) {
-    // MPI_Init/Finalize no son necesarios para pruebas unitarias de lógica local
     cout << "--- EJECUCIÓN DE PRUEBAS UNITARIAS DE RLE EXTENDIDO ---" << endl;
     
     test_compresion_rle_extendido();

@@ -24,13 +24,11 @@ vector<uint8_t> create_seq_test_data() {
 void run_sequential_test() {
     cout << "\n--- INICIO DE PRUEBA SECUENCIAL RLE ---" << endl;
     
-    // 1. Crear el archivo de entrada
     vector<uint8_t> original_data = create_seq_test_data();
     ofstream ofs_in(SEQ_IN_FILE, ios::binary);
     ofs_in.write((const char*)original_data.data(), original_data.size());
     ofs_in.close();
 
-    // 2. Ejecutar la compresión secuencial
     RLECompressor::RunSequential(SEQ_IN_FILE, SEQ_OUT_FILE);
 
     // 3. Generar el resultado comprimido IDEAL esperado
@@ -39,18 +37,14 @@ void run_sequential_test() {
     //           [B] [B] [B] (3 bytes, < RLE_THRESHOLD=3)
     //           [C] [C] (2 bytes, < RLE_THRESHOLD=3)
     //           -> 3 + 3 + 2 = 8 bytes.
-    // NOTA: Conteo de B=3, por lo tanto RLE: [FF 3 B]
     // Expected: [FF 50 A] [FF 3 B] [C] [C] (2 bytes, C directo) -> 3 + 3 + 2 = 8 bytes.
     
-    // Corregido: B=3 cumple RLE_THRESHOLD, C=2 no lo cumple.
-    // Expected: [FF 50 41] [FF 03 42] [43] [43]
     const vector<uint8_t> expected_compressed = {
         0xFF, 50, 65, // 50 A's
         0xFF, 0x03, 66, // 3 B's
         67, 67 // 2 C's literales directos
     };
     
-    // 4. Leer el archivo de salida
     ifstream ifs_out(SEQ_OUT_FILE, ios::binary | ios::ate);
     size_t actual_size = ifs_out.tellg();
     ifs_out.seekg(0, ios::beg);
@@ -58,7 +52,6 @@ void run_sequential_test() {
     ifs_out.read((char*)actual_compressed.data(), actual_size);
     ifs_out.close();
 
-    // 5. Comparar
     if (actual_compressed.size() == expected_compressed.size() &&
         memcmp(actual_compressed.data(), expected_compressed.data(), actual_size) == 0) {
         
@@ -68,7 +61,6 @@ void run_sequential_test() {
         assert(false);
     }
 
-    // 6. Limpieza
     remove(SEQ_IN_FILE.c_str());
     remove(SEQ_OUT_FILE.c_str());
 }

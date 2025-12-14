@@ -20,15 +20,11 @@ void create_test_file(size_t size) {
         return;
     }
     vector<uint8_t> data(size);
-    // Llenar con una secuencia predecible: 0, 1, 2, 3, 4, ...
     iota(data.begin(), data.end(), 0);
     ofs.write((const char*)data.data(), size);
     ofs.close();
 }
 
-/**
- * @brief Ejecuta la prueba de integración para el método Leer_Bloque_MPIIO.
- */
 void run_mpi_io_test(int rank, int size) {
     size_t global_file_size = 0;
     size_t offset_start = 0;
@@ -85,11 +81,11 @@ void run_mpi_io_test(int rank, int size) {
         }
 
         if (size_ok && data_matches) {
-            cout << "P0: PASÓ la Prueba de Integración MPI-IO. Datos leídos correctamente." << endl;
+            cout << "PASÓ la Prueba de Integración MPI-IO. Datos leídos correctamente." << endl;
         } else {
-            cout << "P0: FALLÓ la Prueba de Integración MPI-IO." << endl;
-            if (!size_ok) cout << "P0: FALLO: El tamaño total leido (" << total_read_size << ") es incorrecto." << endl;
-            if (!data_matches) cout << "P0: FALLO: Los datos en las fronteras no coinciden con lo esperado." << endl;
+            cout << "FALLÓ la Prueba de Integración MPI-IO." << endl;
+            if (!size_ok) cout << "FALLO: El tamaño total leido (" << total_read_size << ") es incorrecto." << endl;
+            if (!data_matches) cout << "FALLO: Los datos en las fronteras no coinciden con lo esperado." << endl;
         }
         
     } else {
