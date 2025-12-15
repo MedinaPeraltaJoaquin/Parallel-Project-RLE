@@ -1,3 +1,9 @@
+/**
+ * PROYECTO: Parallel-Project-RLE
+ * @author Medina Peralta Joaquín
+ * @license General Public License (GPL) - O cualquier otra licencia que uses.
+ */
+
 #include "../include/RLECompressor.hpp"
 #include "../include/Timer.hpp"
 #include <iostream>
@@ -346,7 +352,6 @@ void RLECompressor::RunParallelDecompress(const std::string& input_file, const s
     MPI_File fh;
     MPI_Offset compressed_file_size_mpi;
     
-    // Abrir y obtener tamaño del archivo comprimido
     int error = MPI_File_open(MPI_COMM_WORLD, input_file.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (error != MPI_SUCCESS) {
         if (rank == 0) std::cerr << "P" << rank << ": Error al abrir el archivo comprimido: " << input_file << std::endl;
@@ -355,7 +360,6 @@ void RLECompressor::RunParallelDecompress(const std::string& input_file, const s
     MPI_File_get_size(fh, &compressed_file_size_mpi);
     size_t compressed_file_size = (size_t)compressed_file_size_mpi;
 
-    // 1. Distribución de datos comprimidos
     size_t chunk_base_size = compressed_file_size / size;
     size_t remainder = compressed_file_size % size;
     size_t my_chunk_size = chunk_base_size + ((size_t)rank < remainder ? 1 : 0);

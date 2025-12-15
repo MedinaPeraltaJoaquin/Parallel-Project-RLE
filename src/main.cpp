@@ -1,3 +1,9 @@
+/**
+ * PROYECTO: Parallel-Project-RLE
+ * @author Medina Peralta Joaquín
+ * @license General Public License (GPL) - O cualquier otra licencia que uses.
+ */
+
 #include "../include/RLECompressor.hpp"
 #include <iostream>
 #include <string>
@@ -5,7 +11,6 @@
 
 using namespace std;
 
-// Función para mostrar el uso del programa
 void show_usage(const string& name) {
     cerr << "Uso: " << name << " <archivo_entrada> [OPCIONES]" << endl
          << "Opciones de Operación (mutuamente excluyentes):" << endl

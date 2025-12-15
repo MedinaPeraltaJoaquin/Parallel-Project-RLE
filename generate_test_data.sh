@@ -15,7 +15,7 @@ echo "  -> Generando data_plana.bin"
 python3 -c "import sys; sys.stdout.buffer.write(b'\x41' * $SIZE)" > "$OUTPUT_DIR/data_plana.bin"
 
 # 2. Archivo Aleatorio (Muy Baja Repetitividad)
-# Genera 100MB de bytes aleatorios (peor caso para RLE)
+# Genera 100MB de bytes aleatorios
 echo "  -> Generando data_aleatoria.bin"
 head -c $SIZE /dev/urandom > "$OUTPUT_DIR/data_aleatoria.bin"
 

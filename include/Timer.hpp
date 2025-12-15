@@ -1,3 +1,9 @@
+/**
+ * PROYECTO: Parallel-Project-RLE
+ * @author Medina Peralta Joaquín
+ * @license General Public License (GPL) - O cualquier otra licencia que uses.
+ */
+
 #ifndef TIMER_HPP
 #define TIMER_HPP
 
