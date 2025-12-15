@@ -136,6 +136,29 @@ De esta manera, proponemos el pseudocódigo (\ref{anexo:codigo.3}) donde se pued
 observar la compresión en \texttt{RLE} en paralelo y en  (\ref{anexo:codigo.4})
 la manera de descomprimir en paralelo.
 
+Uno de los detalles al momento de realizar la implementación, es al momento
+de recopilar el resultado de cada proceso, debido a la siguientes consideraciones
+para sea un proceso $P_i, P_{i-1}$:
+
+\begin{itemize}
+    \item{
+        Al momento de comprimir, si dos chunks de memoria contenian
+        la misma secuencia de símbolos, el proceso $P_i$ debe sumar
+        los caracteres de la frontera de $P_{i-1}$ y $P_{i-1}$ 
+        debe de borrar del vector de resultado la información de la 
+        representación compactada de la secuencia de símbolos.
+    } 
+    \item{
+        Al momento de descomprimir, si la representación compactada
+        de una secuencia de símbolos es dividida entre la frontera de
+        dos chunks, el proceso $P_i$ debe de tomar la información
+        faltante de $P_{i-1}$ para que $P_i$ pueda descomprimir c
+        orrectamentela información. Para esto, se toma a lo más 
+        2 bytes de del chunk anterior continuo y se elimina la 
+        información tomada del chunk anterior.
+    }
+\end{itemize}
+
 \section*{Experimentación}
 
 Para esto, trabajaremos con 3 archivos de 100 MB con una alta, media y baja 
@@ -145,17 +168,108 @@ y paralela con ${2,4,6,20,50}$ procesadores.
 De este modo, se realizará la prueba en el siguiente equipo:
 \begin{lstlisting}[style=BashStyle]
 ---------------------
-Sistema operativo: Darwin MacBook-Pro-****.local 22.6.0 Darwin 
-Kernel Version 22.6.0: Tue Jul 15 08:22:28 PDT 2025; root:xnu-8796.141.3.713.2~2/
-RELEASE_X86_64 x86_64
-CPU: Intel(R) Core(TM) i5-7360U CPU @ 2.30GHz
-Nucleos fisicos: 2
-Nucleos logicos: 4
-Memoria RAM total: 8,00 GB 
+Sistema operativo: Arch Linux
+Kernel: 6.17.9-arch1-1 
+Arquitectura: x86_64
+CPU: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
+Nucleos fisicos: 4
+Nucleos logicos: 8
+Memoria RAM total: 16,00 GB 
 -------------------------------------------
 \end{lstlisting}
 
+Para esto, se creo un script \verb|generate_test_data.sh|, el 
+cual produce los siguientes archivos de \texttt{100 MB}.
+
+\begin{enumerate}
+    \item Un archivo de alta repetitividad (solo contiene un único tipo de byte, \texttt{A = 0x41}).
+    \item Un archivo aleatorio que representa el peor caso para este algoritmo (tomando elementos aleatorios de \verb|/dev/urandom|).
+    \item Un archivo de repetitividad media tipo malla, donde se repite el patrón \texttt{0123456789}.
+\end{enumerate}
+
+Por último, se creo un script para comprimir archivos por medio de 
+$N$ procesos y de manera secuencial para medir la eficiencia y el
+\texttt{Speedup}.
+
 \section*{Resultados}
 
+Se realizó la experimentación conforme a lo descrito en la sección anterior, teniendo
+los siguientes tiempos para cada uno de los archivos y con los
+siguientes detalles por cada caso (usando las gráficas 
+\ref{fig:eficiencia_vs_procesos}, \ref{fig:speedup_vs_procesos} 
+y \ref{fig:tiempo_vs_procesos}):
+
+\begin{itemize}
+    \item{
+        Para \verb|data_plana.bin|, por la tabla \ref{tab:plana} se puede
+        observar que el mejor tiempo promedio fue cuando se utilizo $N=6$
+        procesos con $0.0701$ y con un Speedup de $S = 1.9$ lo cual
+        está lejos de lo ideal ya que tuve que mejorar 6 veces. Por último,
+        su eficiencia, disminuyo cerca del $30\%$ pero en el caso de
+        $N=4$ su eficiencia es de $46\%$ lo cual es optimo.
+    }
+    \item{
+        Para \verb|data_malla.bin|,por la tabla \ref{tab:malla} llega a su menor tiempo promedio con
+        $N=4$ con $0.2123$ y un Speedup alrededor de $S=2.5$, aunque
+        está un poco más de lo idea ya que tiene que mejorar 4 veces pero
+        es suficiente. De esta manera, con respecto a su eficiencia se tiene
+        que es de $62\%$, lo cual no dismninuye mucho. 
+    }
+    \item{
+        Para \verb|data_aleatoria.bin|, por la tabla \ref{tab:aleatoria}
+        llega con su mejor tiempo promedio con $N=4$ con $0.2324$ y un
+        Speedup alrededor de $2.4200$, lo cual como en los dos casos anteriores,
+        es más de la mitad al esperarse que mejore 4 veces. De esta manera,
+        con respecto a su eficiencia es del $60\%$, lo cual no disminuye mucho.
+     }
+\end{itemize}
+
+Con lo anterior dicho y revisando las gráficas, podemos observar que el número
+de proceso optimos para el equipo en que se realizaron las pruebas es de
+$N=4$ al tener en su mayría de los casos el mejor tiempo proemdio, Speedup
+y eficiencia. 
+
+De similar manera, podemos ver que al incrementar el número de procesos
+mayor a $4$, empieza a incrementar el tiempo promedio entonces no se
+beneficia del incremento de los procesos, ya que al realizarse cambio de
+contexto se ralentiza el proyecto.
+
+Otra observación, es al momento de comunicar los resultados y verificando
+las fronteras entre procesos continuos para evitar que la compresión no 
+sea correcta al no considerar secuencias continuas entre dos chunks
+o se pierda información en la descompresión al dividir el archivo 
+en chunks y que se pierda información como tuplas de información.
+
+De esta manera, el uso de computo distribuido para trabajar el algoritmo
+paralelo por medio de la técnica de \texttt{Fork Join} aunque mejora los
+tiempos, a la larga no se beneficia por la cantidad de procesos. Por último, 
+la parte más complicada de la implementación de esta versión de
+\texttt{RLE} fue la unión de los datos y la comunicación entre procesos. 
+
 \section*{Conclusión}
+
+Como podemos observar durante el reporte, la realización de un algoritmo 
+secuencial a paralelo aunque en ciertas ocasiones es fácil como 
+en \texttt{RLE}, su implementación es de las más criticas porque 
+se debe de considerar condiciones para combinar el resultado 
+de cada proceso y obtener la salida correctamente como el algoritmo secuencial.
+
+De esta manera, en lo personal se considero un reto bastante técnico
+y de implementación al considerar el uso de computo distribuido 
+como uno de los ejes principales del proyecto junto con la técnica de
+\texttt{Fork Join} para paralelizar \texttt{RLE}.
+
+A su vez, al trabajar con poco con \texttt{C++}, el aprender la sintaxis 
+y la manera de usar \texttt{MPI} fue de lo más complicado y era de lo mejor
+para evitar el manejo de memoria que se debe d e considerar en una 
+implementación en \texttt{C} y el uso de programación orientada a objetos
+ya incluida en \texttt{C++} facilitando la implementación.
+
+Por último, con la visualización de los datos, podemos entender que
+la implementación mejoro significativamente el tiempo del algoritmo
+alcanzando su menor tiempo promedio con $N=4$ procesos lo cual para
+datos enormes de memoria, se puede considerar mejor alternativa al 
+la implementación secuencial.
+
+
 

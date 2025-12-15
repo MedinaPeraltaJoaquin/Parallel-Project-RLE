@@ -191,3 +191,271 @@
     \caption{Algoritmo paralelo para descomprimir}
     \label{anexo:codigo.4}
 \end{figure}
+
+\sisetup{
+    round-mode = places,
+    round-precision = 4,
+    table-format = 1.4
+}
+
+\begin{table}[h!]
+    \centering
+    \caption{Resultados de rendimiento para el archivo de \textbf{Alta Repetitividad} (\texttt{data\_plana.bin}).}
+    \label{tab:plana}
+    \begin{tabular}{
+        l
+        l % Procesos (2 dígitos)
+        S[table-format = 1.4] % Tiempo Promedio (s)
+        S[table-format = 1.2] % Speedup (1 dígito entero, 2 decimales)
+    }
+        \toprule
+        \textbf{Archivo} & {\textbf{Procesos}} & {\textbf{Tiempo Promedio (s)}} & {\textbf{Speedup ($S$)}} \\
+        \midrule
+        \texttt{data\_plana.bin} & 1 & 0.1341 & 1.00 \\
+        \texttt{data\_plana.bin} & 2 & 0.0929 & 1.44 \\
+        \texttt{data\_plana.bin} & 4 & 0.0723 & 1.86 \\
+        \texttt{data\_plana.bin} & 6 & 0.0701 & 1.91 \\
+        \texttt{data\_plana.bin} & 8 & 0.0848 & 1.58 \\
+        \texttt{data\_plana.bin} & 10 & 0.0892 & 1.50 \\
+        \texttt{data\_plana.bin} & 16 & 0.0973 & 1.38 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \caption{Resultados de rendimiento para el archivo de \textbf{Media Repetitividad} (\texttt{data\_malla.bin}).}
+    \label{tab:malla}
+    \begin{tabular}{
+        l
+        l
+        S[table-format = 1.4]
+        S[table-format = 1.2]
+    }
+        \toprule
+        \textbf{Archivo} & {\textbf{Procesos}} & {\textbf{Tiempo Promedio (s)}} & {\textbf{Speedup ($S$)}} \\
+        \midrule
+        \texttt{data\_malla.bin} & 1 & 0.5299 & 1.00 \\
+        \texttt{data\_malla.bin} & 2 & 0.3366 & 1.57 \\
+        \texttt{data\_malla.bin} & 4 & 0.2123 & 2.50 \\
+        \texttt{data\_malla.bin} & 6 & 0.2413 & 2.20 \\
+        \texttt{data\_malla.bin} & 8 & 0.2458 & 2.16 \\
+        \texttt{data\_malla.bin} & 10 & 0.3061 & 1.73 \\
+        \texttt{data\_malla.bin} & 16 & 0.3196 & 1.66 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \caption{Resultados de rendimiento para el archivo \textbf{Aleatorio} (Peor Caso) (\texttt{data\_aleatoria.bin}).}
+    \label{tab:aleatoria}
+    \begin{tabular}{
+        l
+        l
+        S[table-format = 1.4]
+        S[table-format = 1.2]
+    }
+        \toprule
+        \textbf{Archivo} & {\textbf{Procesos}} & {\textbf{Tiempo Promedio (s)}} & {\textbf{Speedup ($S$)}} \\
+        \midrule
+        \texttt{data\_aleatoria.bin} & 1 & 0.5613 & 1.00 \\
+        \texttt{data\_aleatoria.bin} & 2 & 0.3522 & 1.59 \\
+        \texttt{data\_aleatoria.bin} & 4 & 0.2324 & 2.42 \\
+        \texttt{data\_aleatoria.bin} & 6 & 0.2388 & 2.35 \\
+        \texttt{data\_aleatoria.bin} & 8 & 0.2399 & 2.34 \\
+        \texttt{data\_aleatoria.bin} & 10 & 0.3187 & 1.76 \\
+        \texttt{data\_aleatoria.bin} & 16 & 0.3505 & 1.60 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            % Configuración del Eje
+            title={Tiempo Promedio de Compresión vs. Número de Procesos},
+            xlabel={Número de Procesos ($N$)},
+            ylabel={Tiempo Promedio (s)},
+            xmin=0, xmax=17,
+            ymin=0, ymax=0.6,
+            ytick distance=0.1,
+            xtick={1, 2, 4, 6, 8, 10, 16},
+            grid=both, 
+            legend style={
+                at={(0.98,0.98)},
+                anchor=north east,
+                draw=none
+            },
+            width=0.9\textwidth,
+            height=8cm,
+        ]
+        \addplot[
+            color=blue,
+            mark=*,
+            line width=1pt,
+        ] coordinates {
+            (1, 0.1341) 
+            (2, 0.0929) 
+            (4, 0.0723) 
+            (6, 0.0701) 
+            (8, 0.0848) 
+            (10, 0.0892) 
+            (16, 0.0973) 
+        };
+        \addlegendentry{Data Plana (Alta R.)}
+        \addplot[
+            color=red!70!black,
+            mark=square*,
+            line width=1pt,
+        ] coordinates {
+            (1, 0.5299) 
+            (2, 0.3366) 
+            (4, 0.2123) 
+            (6, 0.2413) 
+            (8, 0.2458) 
+            (10, 0.3061) 
+            (16, 0.3196) 
+        };
+        \addlegendentry{Data Malla (Media R.)}
+        \addplot[
+            color=green!60!black,
+            mark=triangle*,
+            line width=1pt,
+        ] coordinates {
+            (1, 0.5613) 
+            (2, 0.3522) 
+            (4, 0.2324) 
+            (6, 0.2388) 
+            (8, 0.2399) 
+            (10, 0.3187) 
+            (16, 0.3505) 
+        };
+        \addlegendentry{Data Aleatoria (Baja R.)}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Gráfica del tiempo de compresión promedio en función del número de procesos para los tres tipos de archivos.}
+    \label{fig:tiempo_vs_procesos}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            % Configuración del Eje
+            title={Speedup (Aceleración) vs. Número de Procesos},
+            xlabel={Número de Procesos ($N$)},
+            ylabel={Speedup ($S$)},
+            xmin=0, xmax=17,
+            ymin=0, ymax=4, % Ajuste el máximo del eje Y para incluir Speedup Ideal
+            xtick={1, 2, 4, 6, 8, 10, 16},
+            ytick={1, 2, 3, 4},
+            grid=both, % Configuración de Leyenda
+            legend style={
+                at={(0.98,0.2)}, 
+                anchor=south east,
+                draw=none
+            },
+            width=0.9\textwidth,
+            height=8cm,
+        ]
+        % Speedup IDEAL (Línea de referencia S = N)
+        \addplot[
+            color=black,
+            dashed,
+            line width=1.5pt,
+        ] coordinates {
+            (1, 1) (2, 2) (4, 4) (6, 6) (8, 8) (10, 10) (16, 16)
+        };
+        \addlegendentry{Speedup Ideal}
+        % 1. Data Plana (Alta Repetitividad)
+        \addplot[color=blue, mark=*, line width=1pt,] coordinates {
+            (1, 1.00) (2, 1.44) (4, 1.86) (6, 1.91) (8, 1.58) (10, 1.50) (16, 1.38) 
+        };
+        \addlegendentry{Data Plana (Alta R.)}
+        % 2. Data Malla (Media Repetitividad)
+        \addplot[color=red!70!black, mark=square*, line width=1pt,] coordinates {
+            (1, 1.00) (2, 1.57) (4, 2.50) (6, 2.20) (8, 2.16) (10, 1.73) (16, 1.66) 
+        };
+        \addlegendentry{Data Malla (Media R.)}
+        % 3. Data Aleatoria (Baja Repetitividad / Peor Caso)
+        \addplot[color=green!60!black, mark=triangle*, line width=1pt,] coordinates {
+            (1, 1.00) (2, 1.59) (4, 2.42) (6, 2.35) (8, 2.34) (10, 1.76) (16, 1.60) 
+        };
+        \addlegendentry{Data Aleatoria (Baja R.)}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Gráfica de Speedup obtenido. La aceleración ideal es la línea de referencia.}
+    \label{fig:speedup_vs_procesos}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            % Configuración del Eje
+            title={Eficiencia vs. Número de Procesos},
+            xlabel={Número de Procesos ($N$)},
+            ylabel={Eficiencia ($E = S/N$)},
+            xmin=0, xmax=17,
+            ymin=0, ymax=1.0,
+            ytick distance=0.1,
+            xtick={1, 2, 4, 6, 8, 10, 16},
+            grid=both, 
+            % Configuración de Leyenda
+            legend style={
+                at={(0.98,0.98)}, 
+                anchor=north east,
+                draw=none
+            },
+            width=0.9\textwidth,
+            height=8cm,
+        ]
+        % Línea de Eficiencia 1.0 (Ideal)
+        \addplot[
+            color=black,
+            dashed,
+            line width=1.5pt,
+        ] coordinates {
+            (1, 1.0) (16, 1.0) 
+        };
+        \addlegendentry{Eficiencia Ideal (1.0)}
+        % 1. Data Plana (Eficiencia = S/N)
+        \addplot[color=blue, mark=*, line width=1pt,] coordinates {
+            (1, 1.000) 
+            (2, 0.720) % 1.44 / 2
+            (4, 0.465) % 1.86 / 4
+            (6, 0.318) % 1.91 / 6
+            (8, 0.198) % 1.58 / 8
+            (10, 0.150) % 1.50 / 10
+            (16, 0.086) % 1.38 / 16
+        };
+        \addlegendentry{Data Plana (Alta R.)}
+        % 2. Data Malla (Eficiencia = S/N)
+        \addplot[color=red!70!black, mark=square*, line width=1pt,] coordinates {
+            (1, 1.000) 
+            (2, 0.785) % 1.57 / 2
+            (4, 0.625) % 2.50 / 4
+            (6, 0.367) % 2.20 / 6
+            (8, 0.270) % 2.16 / 8
+            (10, 0.173) % 1.73 / 10
+            (16, 0.104) % 1.66 / 16
+        };
+        \addlegendentry{Data Malla (Media R.)}
+        % 3. Data Aleatoria (Eficiencia = S/N)
+        \addplot[color=green!60!black, mark=triangle*, line width=1pt,] coordinates {
+            (1, 1.000) 
+            (2, 0.795) % 1.59 / 2
+            (4, 0.605) % 2.42 / 4
+            (6, 0.392) % 2.35 / 6
+            (8, 0.293) % 2.34 / 8
+            (10, 0.176) % 1.76 / 10
+            (16, 0.100) % 1.60 / 16
+        };
+        \addlegendentry{Data Aleatoria (Baja R.)}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Gráfica de Eficiencia en función del número de procesos.}
+    \label{fig:eficiencia_vs_procesos}
+\end{figure}
