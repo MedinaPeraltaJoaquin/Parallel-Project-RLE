@@ -1,5 +1,7 @@
 # Parallel-Project-RLE: Compresión y Descompresión RLE Paralela (MPI)
 
+Creado por Medina Peralta Joaquín
+
 Este proyecto implementa un compresor/descompresor Run-Length Encoding (RLE) utilizando paralelismo a través de **Message Passing Interface (MPI)**. El objetivo principal es evaluar el Speedup y la eficiencia de la compresión/descompresión cuando se utilizan múltiples procesadores.
 
 Para ver la documentación completa y el análisis de resultados, consulte el [Informe Técnico en PDF](docs/main.pdf).
